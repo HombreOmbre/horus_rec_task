@@ -1,6 +1,7 @@
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class FileCabinet implements Cabinet {
@@ -13,27 +14,25 @@ public class FileCabinet implements Cabinet {
                 Stream.of(folder);
     }
 
-    @Override
-    public Optional<Folder> findFolderByName(String name) {
+    private Stream<Folder> prepareFinalStream(Predicate<Folder> pred) {
         return Optional.ofNullable(folders).orElseGet(Collections::emptyList).stream()
                 .flatMap(FileCabinet::flattenMultiFolder)
-                .filter(folder -> folder.getName().equals(name))
-                .findFirst();
+                .filter(pred::test);
+    }
+
+    @Override
+    public Optional<Folder> findFolderByName(String name) {
+        return prepareFinalStream(el -> el.getName().equals(name)).findFirst();
     }
 
     @Override
     public List<Folder> findFoldersBySize(String size) {
-        return Optional.ofNullable(folders).orElseGet(Collections::emptyList).stream()
-                .flatMap(FileCabinet::flattenMultiFolder)
-                .filter(folder -> folder.getSize().equals(size))
-                .toList();
+        return prepareFinalStream(folder -> folder.getSize().equals(size)).toList();
     }
 
     @Override
     public int count() {
-        return (int) Optional.ofNullable(folders).orElseGet(Collections::emptyList).stream()
-                .flatMap(FileCabinet::flattenMultiFolder)
-                .count();
+        return (int) prepareFinalStream(el -> true).count();
     }
 }
 
